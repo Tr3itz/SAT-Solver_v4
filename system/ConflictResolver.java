@@ -125,22 +125,22 @@ public class ConflictResolver {
             start += 1;
         }
 
-        System.out.println("\n[PROOF GENERATION] Generating resolution proof tree...\n");
-
-        List<Clause> toVisit = new ArrayList<>();
-        toVisit.add(this.conflictClause);
-
-        while(!toVisit.isEmpty()) {
-            Clause visited = toVisit.remove(0);
-            List<Clause> parents = this.resolutionSteps.get(visited);
-
-            System.out.println("[TREE] " + visited + " | " + parents);
-
-            parents.forEach(clause -> {
-                if(!TrailManager.getTrailManager().isInputClause(clause))
-                    toVisit.add(0, clause);
-            });
-        }
+//        System.out.println("\n[PROOF GENERATION] Generating resolution proof tree...\n");
+//
+//        List<Clause> toVisit = new ArrayList<>();
+//        toVisit.add(this.conflictClause);
+//
+//        while(!toVisit.isEmpty()) {
+//            Clause visited = toVisit.remove(0);
+//            List<Clause> parents = this.resolutionSteps.get(visited);
+//
+//            System.out.println("[TREE] " + visited + " | " + parents);
+//
+//            parents.forEach(clause -> {
+//                if(!TrailManager.getTrailManager().isInputClause(clause))
+//                    toVisit.add(0, clause);
+//            });
+//        }
     }
 
     public Clause getConflictClause() {

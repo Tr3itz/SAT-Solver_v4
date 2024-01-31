@@ -6,6 +6,7 @@ import java.util.List;
 
 public class Literal {
     // MAIN FIELDS
+    private Variable variable;
     private int symbol;
     private boolean falsified;
 
@@ -18,7 +19,8 @@ public class Literal {
     private int scoreHeuristicC;
     private Integer falseLevel;
 
-    public Literal(int symbol) {
+    public Literal(int symbol, Variable variable) {
+        this.variable = variable;
         this.symbol = symbol;
         this.falsified = false;
         this.foundInClauses = new HashSet<>();

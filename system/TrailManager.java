@@ -2,6 +2,7 @@ package system;
 
 import problem.Clause;
 import problem.Literal;
+import problem.Variable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -22,7 +23,7 @@ public class TrailManager {
     private int satisfiedClausesCounter;
     private boolean unsat;
     private HashSet<Clause> originalSet;
-    private Map<Integer, Literal> litToObj;
+    private Map<Integer, Variable> varToObj;
 
     private TrailManager() {}
 
@@ -35,7 +36,7 @@ public class TrailManager {
 
     public void initialize(String fileName) {
         this.trail = new HashMap<>();
-        this.litToObj = new HashMap<>();
+        this.varToObj = new HashMap<>();
         this.set = new HashSet<>(this.parseFile(fileName));
         this.level = 0;
         this.queue = new ArrayList<>();
@@ -45,7 +46,7 @@ public class TrailManager {
         this.originalSet = new HashSet<>(this.set);
 
         System.out.println("The transition system is:\n" + this + "\nThere are " + this.set.size() + " clauses and " +
-                this.litToObj.keySet().size() + " distinct literals");
+                this.varToObj.keySet().size() + " distinct literals");
 
         this.unsat = false;
     }
@@ -162,8 +163,18 @@ public class TrailManager {
         return this.set;
     }
 
-    public Collection<Literal> getLiterals() {
-        return this.litToObj.values();
+    public Collection<Variable> getVariables() {
+        return this.varToObj.values();
+    }
+
+    public List<Literal> getLiterals() {
+        List<Literal> literals = new ArrayList<>();
+
+        for(Variable var: this.varToObj.values()) {
+            literals.addAll(var.getLiteralsList());
+        }
+
+        return literals;
     }
 
     @Override
@@ -291,19 +302,18 @@ public class TrailManager {
 
                 for(String s: symbols) {
                     int key = Integer.parseInt(s);
+                    int variable = Math.abs(key);
 
                     // for each symbol a single object is kept
-                    if(this.litToObj.containsKey(key))
-                        clause.add(this.litToObj.get(key));
+                    if(this.varToObj.containsKey(variable)) {
+                        Variable var = this.varToObj.get(variable);
+                        clause.add(var.getLiteral(key));
+                    }
                     else {
-                        Literal newLiteral = new Literal(key);
-                        this.litToObj.put(key, newLiteral);
+                        Variable newVariable = new Variable(key);
+                        this.varToObj.put(variable, newVariable);
 
-                        Literal opposite = this.litToObj.get(-(newLiteral.getSymbol()));
-                        if(opposite != null) {
-                            newLiteral.setOpposite(opposite);
-                            opposite.setOpposite(newLiteral);
-                        }
+                        Literal newLiteral = newVariable.getLiteral(key);
 
                         clause.add(newLiteral);
                     }

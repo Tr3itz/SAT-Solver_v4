@@ -2,6 +2,7 @@ package system;
 
 import problem.Clause;
 import problem.Literal;
+import problem.Variable;
 import utils.ClauseLengthComparator;
 import utils.LiteralHeuristicBComparator;
 import utils.LiteralHeuristicCComparator;
@@ -15,8 +16,10 @@ public class DecisionMaker {
     // MAIN FIELDS
     private List<Literal> orderedByVSIDS;
     private List<Clause> orderedByLength;
-    private HashSet<Literal> decidable;
-    private HashSet<Literal> nonDecidable;
+    private HashSet<Variable> decidableVar;
+    private HashSet<Literal> decidableLit;
+    private HashSet<Variable> nonDecidableVar;
+    private HashSet<Literal> nonDecidableLit;
 
     // UTILS
     private final LiteralVSIDSComparator literalVSIDSComparator;
@@ -25,8 +28,11 @@ public class DecisionMaker {
     private final ClauseLengthComparator clauseLengthComparator;
 
     private DecisionMaker() {
-        this.decidable = new HashSet<>(TrailManager.getTrailManager().getLiterals());
-        this.nonDecidable = new HashSet<>();
+        this.decidableLit = new HashSet<>(TrailManager.getTrailManager().getLiterals());
+        this.nonDecidableLit = new HashSet<>();
+
+        this.decidableVar = new HashSet<>(TrailManager.getTrailManager().getVariables());
+        this.nonDecidableVar = new HashSet<>();
 
         this.literalVSIDSComparator = new LiteralVSIDSComparator();
         this.literalHeuristicBComparator = new LiteralHeuristicBComparator();
@@ -49,17 +55,17 @@ public class DecisionMaker {
             return this.orderedByVSIDS.remove(0);
         }
 
-        return this.HeuristicC();
+        return this.HeuristicB();
     }
 
     public void decidableLiteral(Literal l) {
-        this.nonDecidable.remove(l);
-        this.decidable.add(l);
+        this.nonDecidableLit.remove(l);
+        this.decidableLit.add(l);
     }
 
     public void nonDecidableLiteral(Literal l) {
-        this.decidable.remove(l);
-        this.nonDecidable.add(l);
+        this.decidableLit.remove(l);
+        this.nonDecidableLit.add(l);
 
         if(this.orderedByVSIDS != null)
             this.orderedByVSIDS.remove(l);
@@ -75,7 +81,7 @@ public class DecisionMaker {
     }
 
     public void updateVSIDS() {
-        this.orderedByVSIDS = new ArrayList<>(this.decidable);
+        this.orderedByVSIDS = new ArrayList<>(this.decidableLit);
         this.orderedByVSIDS.sort(this.literalVSIDSComparator);
     }
 
@@ -85,7 +91,7 @@ public class DecisionMaker {
 
         List<Literal> candidates = shortest.getDisjunction()
                 .stream()
-                .filter(this.decidable::contains)
+                .filter(this.decidableLit::contains)
                 .sorted(this.literalHeuristicBComparator)
                 .toList();
 
@@ -93,13 +99,13 @@ public class DecisionMaker {
     }
 
     private Literal HeuristicC() {
-        List<Literal> candidates = new ArrayList<>(this.decidable);
+        List<Literal> candidates = new ArrayList<>(this.decidableLit);
         candidates.sort(this.literalHeuristicCComparator);
         return candidates.get(candidates.size() - 1);
     }
 
     private Literal randomLiteral() {
-        List<Literal> randLiterals = new ArrayList<>(this.decidable);
+        List<Literal> randLiterals = new ArrayList<>(this.decidableLit);
         Random rand = new Random();
         int upperBound = randLiterals.size();
 
