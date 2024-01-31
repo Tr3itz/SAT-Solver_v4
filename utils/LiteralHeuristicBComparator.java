@@ -1,6 +1,5 @@
 package utils;
 
-import problem.Clause;
 import problem.Literal;
 
 import java.util.Comparator;

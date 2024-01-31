@@ -28,21 +28,23 @@ public class Clause {
         this.trueLiteralsCounter = 0;
         this.length = disjunction.size();
 
-        for(Literal l: disjunction) {
+        for (Literal l : disjunction) {
             this.disjunction.add(l);
             l.foundIn(this);
 
-            if(disjunction.indexOf(l) < 2) {
+            if (disjunction.indexOf(l) < 2) {
                 this.watchedLiterals.add(l);
                 l.watchedIn(this);
             }
         }
 
-        if(this.disjunction.size() == 1)
+        if (this.disjunction.size() == 1)
             this.implied = disjunction.get(0);
+
     }
 
     public Clause(List<Literal> disjunction) {
+        this.id = 0;
         this.disjunction = new HashSet<>(disjunction);
     }
 
@@ -128,13 +130,23 @@ public class Clause {
         if(this.satisfied && !previous) {
             TrailManager.getTrailManager().updateCounter(1);
             DecisionMaker.getDecisionMaker().satisfiedClause(this);
+
+            for(Literal l: this.disjunction)
+                l.updateScoreHeuristicC(-1);
         }
-        else if(!this.satisfied && previous)
+        else if(!this.satisfied && previous) {
             TrailManager.getTrailManager().updateCounter(-1);
+
+            for(Literal l: this.disjunction)
+                l.updateScoreHeuristicC(+1);
+        }
     }
 
     @Override
     public String toString() {
+        if(this.disjunction.isEmpty())
+            return "□";
+
         String res = "[";
 
         List<Literal> toPrint = new ArrayList<>(this.disjunction);
@@ -168,12 +180,6 @@ public class Clause {
             case 1:
                 if(!this.satisfied) {
                     this.implied = nonFalseWatched.get(0);
-//                    if(TrailManager.getTrailManager().aboutToPropagate(this.implied)) {
-//                        this.implied = null;
-//                    } else {
-//                        TrailManager.getTrailManager().addToQueue(this);
-//                        TrailManager.getTrailManager().addToPropagate(this.implied);
-//                    }
                     TrailManager.getTrailManager().addToPropagate(this.implied);
                     TrailManager.getTrailManager().addToQueue(this);
                 }

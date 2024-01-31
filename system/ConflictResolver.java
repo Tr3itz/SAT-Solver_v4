@@ -12,6 +12,10 @@ public class ConflictResolver {
     private Clause conflictClause;
     private Map<Clause, List<Clause>> resolutionSteps;
 
+    // UTILS
+    private Integer prevId;
+    private Integer conflictCounter;
+
     private ConflictResolver() {}
 
     public static ConflictResolver getConflictResolver() {
@@ -26,12 +30,18 @@ public class ConflictResolver {
     }
 
     public boolean conflictHappened() {
-        return this.resolutionSteps != null;
+        return this.conflictCounter !=  null;
     }
 
     public Clause manageConflict() {
+        if(this.conflictCounter == null)
+            this.conflictCounter = 1;
+
         Stack<Literal> currentLevel = TrailManager.getTrailManager().getCurrentLevel();
-        int prevId = TrailManager.getTrailManager().getSet().size();
+
+        if(this.prevId == null)
+            this.prevId = TrailManager.getTrailManager().getSet().size();
+
         int levelSize = currentLevel.size();
         int start = 1;
 
@@ -50,6 +60,7 @@ public class ConflictResolver {
             Clause resolveWith = TrailManager.getTrailManager().getJustification(inTrail);
 
             resolvent = this.explain(this.conflictClause, resolveWith, inTrail);
+            this.conflictCounter += 1;
             resolvent.updateLiteralVSIDS();
 
             System.out.println("\n[EXPLAIN] " + this.conflictClause + " | " + resolveWith + " -> " + resolvent);
@@ -66,11 +77,70 @@ public class ConflictResolver {
         }
 
         List<Literal> resolventLiterals = new ArrayList<>(resolvent.getDisjunction());
-        Clause assertionClause = new Clause(prevId + 1, resolventLiterals);
+        List<Clause> parents = this.resolutionSteps.remove(resolvent);
+        this.prevId += 1;
+
+        Clause assertionClause = new Clause(this.prevId, resolventLiterals);
         assertionClause.setImplied(assertionLiteral);
+        this.resolutionSteps.put(assertionClause, parents);
 
         this.conflictClause = null;
         return assertionClause;
+    }
+
+    public void proofGeneration() {
+        Stack<Literal> currentLevel = TrailManager.getTrailManager().getCurrentLevel();
+
+        if(this.prevId == null)
+            this.prevId = TrailManager.getTrailManager().getSet().size();
+
+        int levelSize = currentLevel.size();
+        int start = 1;
+
+        Clause resolvent;
+
+        while(!this.conflictClause.getDisjunction().isEmpty()) {
+            Literal inTrail = currentLevel.get(levelSize - start);
+            Literal opposite = inTrail.getOpposite();
+
+            if(opposite != null && !this.conflictClause.getDisjunction().contains(opposite)) {
+                start += 1;
+                continue;
+            }
+
+            Clause resolveWith = TrailManager.getTrailManager().getJustification(inTrail);
+
+
+            resolvent = this.explain(this.conflictClause, resolveWith, inTrail);
+            resolvent.updateLiteralVSIDS();
+
+            System.out.println("\n[EXPLAIN] " + this.conflictClause + " | " + resolveWith + " -> " + resolvent);
+
+            if(this.resolutionSteps == null)
+                this.resolutionSteps = new HashMap<>();
+
+            this.resolutionSteps.put(resolvent, List.of(this.conflictClause, resolveWith));
+            this.conflictClause = resolvent;
+
+            start += 1;
+        }
+
+        System.out.println("\n[PROOF GENERATION] Generating resolution proof tree...\n");
+
+        List<Clause> toVisit = new ArrayList<>();
+        toVisit.add(this.conflictClause);
+
+        while(!toVisit.isEmpty()) {
+            Clause visited = toVisit.remove(0);
+            List<Clause> parents = this.resolutionSteps.get(visited);
+
+            System.out.println("[TREE] " + visited + " | " + parents);
+
+            parents.forEach(clause -> {
+                if(!TrailManager.getTrailManager().isInputClause(clause))
+                    toVisit.add(0, clause);
+            });
+        }
     }
 
     public Clause getConflictClause() {

@@ -4,6 +4,7 @@ import problem.Clause;
 import problem.Literal;
 import utils.ClauseLengthComparator;
 import utils.LiteralHeuristicBComparator;
+import utils.LiteralHeuristicCComparator;
 import utils.LiteralVSIDSComparator;
 
 import java.util.*;
@@ -18,9 +19,10 @@ public class DecisionMaker {
     private HashSet<Literal> nonDecidable;
 
     // UTILS
-    LiteralVSIDSComparator literalVSIDSComparator;
-    LiteralHeuristicBComparator literalHeuristicBComparator;
-    ClauseLengthComparator clauseLengthComparator;
+    private final LiteralVSIDSComparator literalVSIDSComparator;
+    private final LiteralHeuristicBComparator literalHeuristicBComparator;
+    private final LiteralHeuristicCComparator literalHeuristicCComparator;
+    private final ClauseLengthComparator clauseLengthComparator;
 
     private DecisionMaker() {
         this.decidable = new HashSet<>(TrailManager.getTrailManager().getLiterals());
@@ -28,6 +30,7 @@ public class DecisionMaker {
 
         this.literalVSIDSComparator = new LiteralVSIDSComparator();
         this.literalHeuristicBComparator = new LiteralHeuristicBComparator();
+        this.literalHeuristicCComparator = new LiteralHeuristicCComparator();
         this.clauseLengthComparator = new ClauseLengthComparator();
 
         this.orderedByLength = new ArrayList<>(TrailManager.getTrailManager().getSet());
@@ -43,20 +46,10 @@ public class DecisionMaker {
 
     public Literal makeDecision() {
         if(ConflictResolver.getConflictResolver().conflictHappened()) {
-            Literal toDecide = this.orderedByVSIDS.remove(0);
-            this.orderedByVSIDS.remove(toDecide);
-            return toDecide;
+            return this.orderedByVSIDS.remove(0);
         }
 
-        Clause shortest = orderedByLength.get(0);
-
-        List<Literal> candidates = shortest.getDisjunction()
-                .stream()
-                .filter(this.decidable::contains)
-                .sorted(this.literalHeuristicBComparator)
-                .toList();
-
-        return candidates.get(candidates.size() - 1);
+        return this.HeuristicC();
     }
 
     public void decidableLiteral(Literal l) {
@@ -84,5 +77,32 @@ public class DecisionMaker {
     public void updateVSIDS() {
         this.orderedByVSIDS = new ArrayList<>(this.decidable);
         this.orderedByVSIDS.sort(this.literalVSIDSComparator);
+    }
+
+    // PRIVATE METHODS
+    private Literal HeuristicB() {
+        Clause shortest = orderedByLength.get(0);
+
+        List<Literal> candidates = shortest.getDisjunction()
+                .stream()
+                .filter(this.decidable::contains)
+                .sorted(this.literalHeuristicBComparator)
+                .toList();
+
+        return candidates.get(candidates.size() - 1);
+    }
+
+    private Literal HeuristicC() {
+        List<Literal> candidates = new ArrayList<>(this.decidable);
+        candidates.sort(this.literalHeuristicCComparator);
+        return candidates.get(candidates.size() - 1);
+    }
+
+    private Literal randomLiteral() {
+        List<Literal> randLiterals = new ArrayList<>(this.decidable);
+        Random rand = new Random();
+        int upperBound = randLiterals.size();
+
+        return randLiterals.get(rand.nextInt(upperBound));
     }
 }

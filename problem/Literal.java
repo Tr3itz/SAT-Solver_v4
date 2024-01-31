@@ -15,6 +15,7 @@ public class Literal {
     private HashSet<Clause> watchedInClauses;
     private int scoreVSIDS;
     private int scoreHeuristicB;
+    private int scoreHeuristicC;
     private Integer falseLevel;
 
     public Literal(int symbol) {
@@ -24,11 +25,13 @@ public class Literal {
         this.watchedInClauses = new HashSet<>();
         this.scoreVSIDS = 0;
         this.scoreHeuristicB = 0;
+        this.scoreHeuristicC = 0;
     }
 
     public void foundIn(Clause c) {
         this.foundInClauses.add(c);
         this.scoreHeuristicB += 1;
+        this.scoreHeuristicC += 1;
     }
 
     public void watchedIn(Clause c) {
@@ -63,6 +66,10 @@ public class Literal {
         return this.scoreHeuristicB;
     }
 
+    public int getScoreHeuristicC() {
+        return this.scoreHeuristicC;
+    }
+
     public int getFalseLevel() {
         return this.falseLevel;
     }
@@ -87,6 +94,10 @@ public class Literal {
 
     public void updateScoreVSIDS() {
         this.scoreVSIDS += 1;
+    }
+
+    public void updateScoreHeuristicC(int update) {
+        this.scoreHeuristicC += update;
     }
 
     public void setFalseLevel(int level) {

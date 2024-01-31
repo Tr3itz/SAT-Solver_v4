@@ -20,6 +20,7 @@ public class TrailManager {
     private HashSet<Literal> toPropagate;
     private Map<Literal, Clause> trailMap;
     private int satisfiedClausesCounter;
+    private boolean unsat;
     private HashSet<Clause> originalSet;
     private Map<Integer, Literal> litToObj;
 
@@ -45,9 +46,23 @@ public class TrailManager {
 
         System.out.println("The transition system is:\n" + this + "\nThere are " + this.set.size() + " clauses and " +
                 this.litToObj.keySet().size() + " distinct literals");
+
+        this.unsat = false;
     }
     public boolean isSat() {
         return this.satisfiedClausesCounter == this.set.size();
+    }
+
+    public boolean alternativeSat() {
+        for(Clause c: this.set)
+            if(!c.isSatisfied())
+                return false;
+
+        return true;
+    }
+
+    public boolean isUnsat() {
+        return this.unsat;
     }
 
     public boolean canPropagate() {
@@ -118,6 +133,10 @@ public class TrailManager {
         this.satisfiedClausesCounter += update;
     }
 
+    public boolean isInputClause(Clause c) {
+        return this.originalSet.contains(c);
+    }
+
     public Stack<Literal> getCurrentLevel() {
         return this.trail.get(this.level);
     }
@@ -163,7 +182,6 @@ public class TrailManager {
         }
 
         res += "]";
-        // res += "] || \nS: " + this.set;
 
         return res;
     }
@@ -185,12 +203,13 @@ public class TrailManager {
             DecisionMaker.getDecisionMaker().nonDecidableLiteral(opposite);
         }
 
-        System.out.println("[UPDATE] The transition system is now:\n" + this);
+        System.out.println("[UPDATE] The transition system is now:\n" + this + "\nSatisfied clauses/Total clauses: " +
+                this.satisfiedClausesCounter + "/" + this.set.size());
 
         if(ConflictResolver.getConflictResolver().isConflict())
             if(this.level == 0) {
-                System.out.println("\nThe problem is UNSAT.");
-                System.exit(0);
+                ConflictResolver.getConflictResolver().proofGeneration();
+                this.unsat = true;
             } else {
                 System.out.println("\n[CONFLICT] Found conflict clause: " + ConflictResolver.getConflictResolver().getConflictClause()
                         + ConflictResolver.getConflictResolver().getConflictClause().getWatchedLiterals());
